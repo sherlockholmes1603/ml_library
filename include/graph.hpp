@@ -1,10 +1,9 @@
 #ifndef GRAPH_HPP
 #define GRAPH_HPP
 
+#include "tensor.hpp"
 #include <vector>
 #include <Eigen/Dense>
-
-class Tensor;
 
 class Graph
 {

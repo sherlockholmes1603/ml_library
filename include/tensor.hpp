@@ -8,8 +8,6 @@
 #include <functional>
 #include <string>
 
-class Graph;
-
 class Tensor
 {
 public:
@@ -37,14 +35,14 @@ public:
     int cols() const;
 
     // --- Basic Math (To be implemented in .cpp) ---
-    Tensor *operator*(Tensor *other, Graph &graph); // Dot product
-    Tensor *operator+(Tensor *other, Graph &graph);
-    Tensor *operator-(Tensor *other, Graph &graph);
-    Tensor *operator^(Tensor *other, Graph &graph); // Hadamard (Element-wise)
-    Tensor *operator*(float scalar, Graph &graph);
+    Tensor *operator*(Tensor *other); // Dot product
+    Tensor *operator+(Tensor *other);
+    Tensor *operator-(Tensor *other);
+    Tensor *operator^(Tensor *other); // Hadamard (Element-wise)
+    Tensor *operator*(float scalar);
 
     // --- Transformations & Reductions ---
-    Tensor *transpose(Graph &graph);
+    Tensor *transpose();
     float sum() const;
     float mean() const;
     // Hint: For Softmax/Loss, you might need sum(axis)

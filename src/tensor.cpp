@@ -55,7 +55,7 @@ Tensor::Tensor(Eigen::MatrixXf m,
 float &Tensor::operator()(int r, int c) { return data(r, c); }
 float Tensor::operator()(int r, int c) const { return data(r, c); }
 
-Tensor *Tensor::operator+(Tensor *other, Graph &graph)
+Tensor *Tensor::operator+(Tensor *other)
 {
     Eigen::MatrixXf res = this->data + other->data;
 
@@ -68,10 +68,10 @@ Tensor *Tensor::operator+(Tensor *other, Graph &graph)
         other->grad += out->grad;
     };
 
-    return graph.track(out);
+    return out;
 }
 
-Tensor *Tensor::operator-(Tensor *other, Graph &graph)
+Tensor *Tensor::operator-(Tensor *other)
 {
     Eigen::MatrixXf res = this->data - other->data;
 
@@ -83,10 +83,10 @@ Tensor *Tensor::operator-(Tensor *other, Graph &graph)
         this->grad += out->grad;
         other->grad -= out->grad; // Note the minus sign here for subtraction
     };
-    return graph.track(out);
+    return out;
 }
 
-Tensor *Tensor::operator^(Tensor *other, Graph &graph)
+Tensor *Tensor::operator^(Tensor *other)
 {
     // .array() turns the matrix into an array to allow element-wise ops
     Eigen::MatrixXf res = this->data.array() * other->data.array();
@@ -99,10 +99,10 @@ Tensor *Tensor::operator^(Tensor *other, Graph &graph)
         // dL/dB = dL/dOut * A
         other->grad.array() += out->grad.array() * this->data.array();
     };
-    return graph.track(out);
+    return out;
 }
 
-Tensor *Tensor::operator*(Tensor *other, Graph &graph)
+Tensor *Tensor::operator*(Tensor *other)
 {
     Eigen::MatrixXf res = this->data * other->data;
     Tensor *out = new Tensor(res, {this, other}, nullptr, "dot");
@@ -112,10 +112,10 @@ Tensor *Tensor::operator*(Tensor *other, Graph &graph)
         this->grad += out->grad * other->data.transpose();
         other->grad += this->data.transpose() * out->grad;
     };
-    return graph.track(out);
+    return out;
 }
 
-Tensor *Tensor::operator*(float scalar, Graph &graph)
+Tensor *Tensor::operator*(float scalar)
 {
     Eigen::MatrixXf res = this->data * scalar;
     Tensor *out = new Tensor(res, {this}, nullptr, "scale");
@@ -124,17 +124,17 @@ Tensor *Tensor::operator*(float scalar, Graph &graph)
     {
         this->grad += out->grad * scalar;
     };
-    return graph.track(out);
+    return out;
 }
 
-Tensor *Tensor::transpose(Graph &graph)
+Tensor *Tensor::transpose()
 {
     Tensor *out = new Tensor(data.transpose(), {this}, nullptr, "transpose");
     out->backward_fn = [this, out]()
     {
         this->grad += out->grad.transpose();
     };
-    return graph.track(out);
+    return out;
 }
 
 int Tensor::rows() const
