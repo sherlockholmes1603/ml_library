@@ -11,6 +11,8 @@
 class Tensor
 {
 public:
+    inline static long long active_tensors = 0;
+
     Eigen::MatrixXf data;
     Eigen::MatrixXf grad; // For storing gradients during backpropagation
 
@@ -25,6 +27,7 @@ public:
            std::vector<Tensor *> p = {},
            std::function<void()> bw = nullptr,
            std::string operation = "");
+    ~Tensor();
 
     void backward();
 

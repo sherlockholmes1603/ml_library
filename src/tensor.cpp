@@ -8,6 +8,7 @@ Tensor::Tensor(int rows, int cols)
 {
     data = Eigen::MatrixXf::Zero(rows, cols);
     grad = Eigen::MatrixXf::Zero(rows, cols);
+    active_tensors++;
 }
 
 Tensor::Tensor(int rows, int cols, std::string init_type)
@@ -39,6 +40,7 @@ Tensor::Tensor(int rows, int cols, std::string init_type)
         throw std::invalid_argument("Unknown initialization type");
     }
     grad = Eigen::MatrixXf::Zero(rows, cols);
+    active_tensors++;
 }
 
 Tensor::Tensor(Eigen::MatrixXf m,
@@ -50,6 +52,12 @@ Tensor::Tensor(Eigen::MatrixXf m,
 
     // Always initialize grad to zeros of the same shape as data
     grad = Eigen::MatrixXf::Zero(m.rows(), m.cols());
+    active_tensors++;
+}
+
+Tensor::~Tensor()
+{
+    active_tensors--;
 }
 
 float &Tensor::operator()(int r, int c) { return data(r, c); }

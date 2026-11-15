@@ -14,6 +14,7 @@ set(SOURCES
     src/graph.cpp
     src/linear.cpp
     src/optimizer.cpp
+    src/linear_regression.cpp
     # Add new .cpp files here as you create them 
 )
 

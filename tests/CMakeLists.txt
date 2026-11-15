@@ -18,6 +18,7 @@ add_executable(
     test_autograd.cpp
     test_layers.cpp
     test_optimizer.cpp
+    test_linear_regression.cpp
 )
 
 # Link to libraries and GTest
