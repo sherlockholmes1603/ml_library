@@ -46,7 +46,7 @@ TEST_F(LinearRegressionTest, TrainingConvergenceTest)
 
     LinearRegression model(input_dim, 0.05f);
 
-    float final_loss = model.compute_loss(X, y, 300, 1000);
+    float final_loss = model.fit(X, y, 300, 1000);
     EXPECT_LT(final_loss, 0.01f);
 
     float learned_w = model.get_weights()->data(0, 0);
@@ -63,13 +63,17 @@ TEST_F(LinearRegressionTest, LoopMemoryAccumulationTest)
     long long initial_tensors = Tensor::active_tensors;
 
     // Run your training loop or function
-    LinearRegression model(2, 0.01f);
-    Tensor X(10, 2);
-    Tensor y(10, 1);
-    X.data.setRandom();
-    y.data.setRandom();
+    {
+        LinearRegression model(2, 0.01f);
+        Tensor X(10, 2);
+        Tensor y(10, 1);
+        X.data.setRandom();
+        y.data.setRandom();
 
-    model.compute_loss(&X, &y, 50, 1000); // 50 epochs
+        model.fit(&X, &y, 50, 1000); // 50 epochs
+        delete model.get_weights();
+        delete model.get_bias();
+    }
 
     // Check that every temporary tensor created during forward/backward
     // passes and epoch loops was successfully destroyed.

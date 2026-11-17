@@ -9,7 +9,7 @@ elif [ "$1" == "run" ]; then
     echo "=== Building Project ==="
     cmake -S . -B build
     cmake --build build
-    ./build/ml_lib_app
+    ./build/ml_test_app
 else
     echo "Usage: $0 {test|run}"
     exit 1

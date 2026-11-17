@@ -392,7 +392,7 @@ Tensor *Tensor::binary_cross_entropy_loss(Tensor *target)
     {
         float n = this->data.size();
         this->grad.array() += ((this->data.array() - target->data.array()) /
-                               (this->grad.array() * (1 - this->data.array()))) *
+                               (this->data.array() * (1.0f - this->data.array()))) *
                               out->grad(0, 0) / n;
     };
     return out;

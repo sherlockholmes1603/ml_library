@@ -13,17 +13,17 @@ LinearRegression::~LinearRegression()
     delete optimizer;
 }
 
-Tensor *LinearRegression::forward(Tensor *input)
+Tensor *LinearRegression::predict(Tensor *input)
 {
     return layer->forward(input);
 }
 
-float LinearRegression::compute_loss(Tensor *inputs, Tensor *targets, int epochs, int print_every)
+float LinearRegression::fit(Tensor *inputs, Tensor *targets, int epochs, int print_every)
 {
     float final_loss = 0.0f;
     for (int i = 0; i < epochs; i++)
     {
-        Tensor *y_pred = forward(inputs);
+        Tensor *y_pred = predict(inputs);
         Tensor *loss = y_pred->mse_loss(targets);
 
         optimizer->zero_grad();

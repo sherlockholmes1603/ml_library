@@ -6,18 +6,18 @@
 class linear
 {
 public:
-    Tensor* weights;
-    Tensor* bias;
+    Tensor *weights;
+    Tensor *bias;
 
     linear(int input_dim, int output_dim);
-    Tensor* forward(Tensor* input);
-    std::vector<Tensor*> parameters();
+    Tensor *forward(Tensor *input);
+    std::vector<Tensor *> parameters();
 
-    ~linear() {
+    ~linear()
+    {
         delete weights;
         delete bias;
     }
 };
-
 
 #endif // LINEAR_HPP
