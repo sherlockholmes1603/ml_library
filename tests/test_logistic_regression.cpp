@@ -104,16 +104,17 @@ TEST_F(LogisticRegressionTest, BinaryConvergenceTest)
 TEST_F(LogisticRegressionTest, MulticlassConvergenceTest)
 {
     // 3 classes decided by which of 3 features is largest.
-    // NOTE: adjust target encoding to match what your cross_entropy_loss expects
-    // (class indices vs one-hot).
+    // cross_entropy_loss expects ONE-HOT labels with the SAME shape as the
+    // model's output: y is (n, 3), not (n, 1) class indices.
     int n = 300;
-    Tensor X(n, 3), y(n, 1);
+    Tensor X(n, 3), y(n, 3);
     X.data.setRandom();
+    y.data.setZero();
     for (int i = 0; i < n; ++i)
     {
         int idx;
         X.data.row(i).maxCoeff(&idx);
-        y(i, 0) = static_cast<float>(idx);
+        y(i, idx) = 1.0f; // one-hot
     }
 
     LogisticRegression model(3, 3, 0.5f, "Adam");
@@ -122,8 +123,14 @@ TEST_F(LogisticRegressionTest, MulticlassConvergenceTest)
     Tensor *pred = model.predict(&X);
     int correct = 0;
     for (int i = 0; i < n; ++i)
-        if ((*pred)(i, 0) == y(i, 0))
+    {
+        // pred holds a class INDEX; y is one-hot, so recover the true class
+        // by taking the argmax of the row before comparing.
+        int true_class;
+        y.data.row(i).maxCoeff(&true_class);
+        if (static_cast<int>((*pred)(i, 0)) == true_class)
             correct++;
+    }
     EXPECT_GT(static_cast<float>(correct) / n, 0.9f);
     delete pred;
 }
@@ -194,7 +201,7 @@ TEST_F(LogisticRegressionTest, MulticlassLoopMemoryAccumulationTest)
     long long initial = Tensor::active_tensors;
     {
         LogisticRegression model(3, 4, 0.01f);
-        Tensor X(10, 3), y(10, 1);
+        Tensor X(10, 3), y(10, 4); // y shape MUST match model output (one-hot)
         X.data.setRandom();
         y.data.setZero();
         model.fit(&X, &y, 50, 1000);

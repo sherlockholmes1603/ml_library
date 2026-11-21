@@ -3,52 +3,54 @@
 LogisticRegression::LogisticRegression(int input_dim, int output_dim, float learning_rate, std::string optimizer_type)
 {
     binary_classification = (output_dim == 1);
+
+    // Validate BEFORE allocating anything. If an exception escapes a
+    // constructor, C++ does NOT run the destructor (the object was never
+    // fully constructed), so everything allocated before the throw leaks.
+    // Validate first, allocate after.
+    if (optimizer_type != "SGD" && optimizer_type != "Adam")
+    {
+        throw std::invalid_argument("Unsupported optimizer type: " + optimizer_type);
+    }
+
     layer = new linear(input_dim, output_dim);
 
     if (optimizer_type == "SGD")
     {
         optimizer = new SGD_NoMomentum(layer->parameters(), learning_rate);
     }
-    else if (optimizer_type == "Adam")
+    else // "Adam" — the only remaining possibility after validation
     {
         optimizer = new Adam(layer->parameters(), learning_rate);
-    }
-    else
-    {
-        throw std::invalid_argument("Unsupported optimizer type: " + optimizer_type);
     }
 }
 
 LogisticRegression::~LogisticRegression()
 {
+    // Tier 1 only: the model owns the layer (which owns weights and bias)
+    // and the optimizer. Compuation intermediates are NOT the model's job.
     delete layer;
     delete optimizer;
-    for (int i = 0; i < cleanup_array.size(); ++i)
-    {
-        delete cleanup_array[i];
-    }
 }
 
 Tensor *LogisticRegression::predict_proba(Tensor *input)
 {
+    // Self-contained: everything created here is deleted here.
     Tensor *logits = layer->forward(input);
-    this->cleanup_array.push_back(logits);
-    if (binary_classification)
-    {
-        Tensor *probabilities = logits->sigmoid();
-        return probabilities;
-    }
-    else
-    {
-        // For multi-class classification, apply softmax
-        Tensor *probabilities = logits->softmax();
-        return probabilities;
-    }
+    Tensor *probs = binary_classification ? logits->sigmoid() : logits->softmax();
+
+    // Detached copy: no parents -> no dangling pointers, safe for the caller
+    // to delete whenever, and safe because inference never calls backward().
+    Tensor *out = new Tensor(probs->data);
+
+    delete probs;   // created 2nd -> deleted 1st
+    delete logits;  // created 1st -> deleted 2nd
+    return out;     // tier 3: caller owns and deletes
 }
 
 Tensor *LogisticRegression::predict(Tensor *input)
 {
-    Tensor *probabilities = predict_proba(input);
+    Tensor *probabilities = predict_proba(input); // detached, self-contained
     Tensor *predictions;
 
     if (binary_classification)
@@ -73,8 +75,7 @@ Tensor *LogisticRegression::predict(Tensor *input)
     }
 
     delete probabilities;
-    this->cleanup_array.push_back(predictions);
-    return predictions;
+    return predictions; // tier 3: caller owns and deletes
 }
 
 float LogisticRegression::fit(Tensor *inputs, Tensor *targets, int epochs, int print_every)
@@ -82,25 +83,26 @@ float LogisticRegression::fit(Tensor *inputs, Tensor *targets, int epochs, int p
     float final_loss = 0.0f;
     for (int i = 0; i < epochs; i++)
     {
-        Tensor *y_pred = predict_proba(inputs);
-        Tensor *loss;
-
-        if (binary_classification)
-        {
-            loss = y_pred->binary_cross_entropy_loss(targets);
-        }
-        else
-        {
-            loss = y_pred->cross_entropy_loss(targets);
-        }
+        // Build the training graph LOCALLY. Note: fit must NOT call
+        // predict_proba for training - its returned tensor is detached
+        // (no parents), so backward() would find no path to the weights
+        // and training would silently do nothing.
+        Tensor *logits = layer->forward(inputs);  // created 1st
+        Tensor *y_pred = binary_classification ? logits->sigmoid() : logits->softmax(); // created 2nd
+        Tensor *loss = binary_classification
+                           ? y_pred->binary_cross_entropy_loss(targets)
+                           : y_pred->cross_entropy_loss(targets); // created 3rd
 
         optimizer->zero_grad();
-        loss->backward();
+        loss->backward(); // the whole graph must be alive right here
         optimizer->step();
 
         final_loss = loss->data(0, 0);
-        delete y_pred;
-        delete loss;
+
+        // Cleanup in REVERSE creation order: children before parents.
+        delete loss;    // created 3rd -> deleted 1st
+        delete y_pred;  // created 2nd -> deleted 2nd
+        delete logits;  // created 1st -> deleted 3rd
 
         if (i % print_every == 0)
         {

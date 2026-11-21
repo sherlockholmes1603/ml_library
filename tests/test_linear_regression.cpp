@@ -71,12 +71,8 @@ TEST_F(LinearRegressionTest, LoopMemoryAccumulationTest)
         y.data.setRandom();
 
         model.fit(&X, &y, 50, 1000); // 50 epochs
-        delete model.get_weights();
-        delete model.get_bias();
     }
 
-    // Check that every temporary tensor created during forward/backward
-    // passes and epoch loops was successfully destroyed.
     EXPECT_EQ(Tensor::active_tensors, initial_tensors)
         << "Memory leak detected! Tensors left active: " << (Tensor::active_tensors - initial_tensors);
 }
